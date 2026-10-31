@@ -1,3 +1,13 @@
+# TW527E 的 BiliAnalysis 介面分支
+
+此 fork 保留上游原檔，客製版集中於 [`vr/`](vr/README.md)：影片頁使用半透明收合入口，並支援 BewlyCat 卡片的解析快捷鍵。
+
+**[安裝 BiliAnalysis VR](https://raw.githubusercontent.com/TW527E/BiliAnalysis/main/vr/BiliAnalysis-VR.user.js)** · [操作、設定與更新說明](vr/README.md)
+
+安裝客製版前請停用原版 BiliAnalysis。油猴會從本 fork 更新客製版；上游解析程式的同步仍需重新執行 `vr/build.mjs`，不是排程自動同步。
+
+---
+
 # BiliAnalysis
 
 [![Stars](https://img.shields.io/github/stars/mmyo456/BiliAnalysis?style=flat-square)](https://github.com/mmyo456/BiliAnalysis/stargazers)

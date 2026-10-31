@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BiliAnalysis VR · 瀏覽器驗證</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#141416;color:#f5f3f5;font:16px system-ui,sans-serif}
+header{padding:24px 40px;border-bottom:1px solid #343237;display:flex;justify-content:space-between;align-items:center}
+header span{color:#d2cdd2;font-size:14px}main{max-width:1120px;margin:90px auto;padding:0 32px}h1{font-size:26px;margin:0 0 12px}p{color:#c9c3ca;margin:0 0 32px;line-height:1.6}
+#result{white-space:pre-wrap;font-size:13px;color:#d2cdd2;margin-top:44px}
+@media(max-width:1100px){main{margin-top:176px}}@media(max-width:600px){header{padding:20px}header span{display:none}main{margin:176px auto 160px;padding:0 20px}}
+</style>
+<header><strong>BiliAnalysis VR</strong><span>上游解析 · BewlyCat 快捷操作</span></header>
+<main><h1>看到喜歡的，直接複製。</h1><p>移上卡片後點「解析連結」，保留封面預覽與稍後再看。</p><div id="bewly" class="dark"></div><pre id="result">驗證中…</pre></main>
+<script>
+window.settings = { parseModes:['cloud-jx'], autoUpdateLastCheckDate:new Date().toLocaleDateString('en-CA') };
+window.copies = [];
+Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{copies.push(text)}}});
+window.GM_getValue = (key, fallback) => settings[key] ?? fallback;
+window.GM_setValue = (key,value) => { settings[key] = value; };
+window.GM_addStyle = css => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); };
+window.GM_registerMenuCommand = (name,action) => { window.openSettings = action; };
+window.GM_setClipboard = (text,type,done) => { copies.push(text); done?.(); };
+window.GM_xmlhttpRequest = () => {};
+window.GM_info = {script:{name:'BiliAnalysis VR',version:'0.3.4.4'}};
+// The fixture uses the inspected BewlyCat shadow host, cover and wrapping-link structure.
+window.cardMarkup = (id, title, image, p='') => `<article><a href="https://www.bilibili.com/video/${id}/${p}" class="card"><div class="vertical-card-cover"><div class="group/cover bew-cover-action-host"><img src="${image}" alt=""><button class="favorite" type="button" aria-label="收藏">×</button><button class="later" type="button" aria-label="稍後再看">＋</button><div class="stats"><span>影片預覽</span><span>03:34</span></div></div></div><h3>${title}</h3></a></article>`;
+window.attachCards = () => {
+ const host = document.getElementById('bewly');
+ const root = host.attachShadow({mode:'open'});
+ root.innerHTML = `<style>
+ :host{display:block}*{box-sizing:border-box}section{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}article{min-width:0}a{color:inherit;text-decoration:none}h3{font-size:16px;font-weight:500;line-height:1.5;margin:12px 0}.bew-cover-action-host{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#343237}img{width:100%;height:100%;object-fit:cover}.later,.favorite{position:absolute;background:#202124;color:#fff;border:1px solid #59575e;border-radius:50%;width:36px;height:36px;font-size:22px}.later{right:8px;bottom:32px}.favorite{top:4px;left:4px;opacity:0}article:hover .favorite{opacity:1}.stats{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;background:#202124;font-size:12px;color:#ddd}
+ @media(max-width:900px){section{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){section{grid-template-columns:1fr}}
+ </style><section>` +
+ cardMarkup('BV1J38J6aEEn','像褪色後的夜晚','data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#6f7988"/><text x="36" y="195" fill="#fff" font-size="42" font-family="sans-serif">褪色後的夜晚</text></svg>')) +
+ cardMarkup('BV1nVDcBcEsR','一首小狗送給你的歌','data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#9e9a7f"/><text x="36" y="195" fill="#fff" font-size="42" font-family="sans-serif">給你的歌</text></svg>')) +
+ cardMarkup('BV1JkdfYyEFV','無呼吸義務 · 翻唱','data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#706580"/><text x="36" y="195" fill="#fff" font-size="42" font-family="sans-serif">無呼吸義務</text></svg>')) + '</section>';
+ return root;
+};
+if (!new URLSearchParams(location.search).has('late')) attachCards();
+history.replaceState(null,'','?bvid=BV1J38J6aEEn&'+location.search.slice(1));
+</script>
+<script src="../BiliAnalysis-VR.user.js"></script>
+<script>
+window.runChecks = async () => {
+ const results=[];
+ const check=(condition,message)=>{if(!condition)throw new Error(message);results.push(message)};
+ const settle=()=>{const marker=document.createElement('i');document.body.append(marker);marker.remove();return new Promise(resolve=>setTimeout(resolve,300))};
+ const wasLate=!document.getElementById('bewly').shadowRoot;
+ const root=document.getElementById('bewly').shadowRoot || attachCards();
+ const all=()=>root.querySelectorAll('.ba-vr-card-actions button');
+ if(wasLate){await new Promise(resolve=>setTimeout(resolve,1800));check(all().length===3,'無 light DOM 變動的延遲 Shadow Root 也能掛載')}
+ await settle();
+ check(all().length===3,'每張 Shadow DOM 卡片一個按鈕');
+ check([...all()].every(button=>button.querySelector('svg')&&button.querySelector('span').textContent==='解析連結'),'單一方式顯示複製圖示與「解析連結」');
+ check([...root.querySelectorAll('.ba-vr-card-actions')].every(actions=>getComputedStyle(actions).opacity==='0'&&getComputedStyle(actions).pointerEvents==='none'),'未移上卡片時隱藏快捷鍵且不攔截滑鼠');
+ let navigated=false;root.querySelector('.card').addEventListener('click',e=>{navigated=true;e.preventDefault()});
+ all()[0].click();
+ check(copies.at(-1)==='https://jx.ouo.chat/bl/?url=BV1J38J6aEEn&p=1','雲端連結由上游產生');
+ check(!navigated,'快捷鍵不觸發卡片導覽');
+ root.querySelector('.card').href='https://www.bilibili.com/video/BV1nVDcBcEsR/?p=3&spm_id_from=tracking';
+ await settle();all()[0].click();
+ check(copies.at(-1)==='https://jx.ouo.chat/bl/?url=BV1nVDcBcEsR&p=3','重用卡片換片與分 P 正確');
+ root.querySelector('.card').href='https://www.bilibili.com.evil.example/video/BV1nVDcBcEsR';
+ await settle();check(all().length===2,'拒絕非 Bilibili 的連結');
+ root.querySelector('.card').href='https://www.bilibili.com/video/BV1J38J6aEEn/';
+ settings.parseModes=['cloud-jx','cloud-ya'];await settle();
+ check(all().length===6,'同步上游選取的兩種解析方式');
+ const cover=root.querySelector('.bew-cover-action-host');cover.style.width='272px';
+ const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+ const existing=[...cover.querySelectorAll('.later,.favorite')].map(el=>el.getBoundingClientRect());
+ check([...cover.querySelectorAll('.ba-vr-action')].every(el=>existing.every(rect=>!overlaps(el.getBoundingClientRect(),rect))),'272px 窄封面兩種方式均避開收藏與稍後再看');
+ cover.style.width='';
+ all()[1].click();check(copies.at(-1)==='https://bil.ouo.chat/player/?url=BV1J38J6aEEn&p=1','第二種方式仍用上游端點');
+ settings.parseModes=['local','cloud-ya'];await settle();
+ const pair=root.querySelector('.ba-vr-card-actions');
+ const main=pair.querySelector('[data-mode="cloud-ya"]'),local=pair.querySelector('[data-mode="local"]');
+ check(pair.firstElementChild===main&&main.querySelector('span').textContent==='解析連結'&&main.getBoundingClientRect().width>local.getBoundingClientRect().width&&local.getBoundingClientRect().width===44,'ya 為較大主按鈕，本地為 44px 小按鈕');
+ check([...all()].every(button=>getComputedStyle(button.querySelector('svg')).display!=='none'),'兩種解析方式皆保留複製圖示');
+ main.click();check(copies.at(-1)==='https://bil.ouo.chat/player/?url=BV1J38J6aEEn&p=1','較大主按鈕使用 ya 雲端解析');
+ settings.parseModes=['cloud-jx','cloud-ya'];await settle();
+ const write=navigator.clipboard.writeText;navigator.clipboard.writeText=()=>Promise.reject(new Error('fixture: denied'));
+ all()[0].click();await settle();
+ check(copies.at(-1)==='https://jx.ouo.chat/bl/?url=BV1J38J6aEEn&p=1','瀏覽器剪貼簿失敗時保留上游 GM 複製後備');
+ const gmCopy=window.GM_setClipboard;window.GM_setClipboard=()=>{throw new Error('fixture: denied')};
+ all()[0].click();await settle();
+ check(document.getElementById('notificationBox').textContent.includes('复制失败'),'兩種複製皆失敗時顯示上游錯誤提示');
+ navigator.clipboard.writeText=write;window.GM_setClipboard=gmCopy;
+ settings.parseModes=['local'];await settle();
+ const requests=[];
+ window.XMLHttpRequest=class {
+  open(method,url){this.url=url;requests.push(url)}
+  send(){setTimeout(()=>{this.readyState=4;this.status=200;this.responseText=JSON.stringify(this.url.includes('pagelist')?{data:[{cid:42}]}:{data:{durl:[{url:'https://media.example.test/video.mp4'}]}});this.onreadystatechange?.()},0)}
+ };
+ all()[0].click();await settle();
+ check(requests.length===2&&requests[1].includes('cid=42'),'本地解析仍走上游兩段 API');
+ check(copies.at(-1)==='https://media.example.test/video.mp4','本地直鏈由上游複製');
+ settings.parseModes=['cloud-jx'];
+ const section=root.querySelector('section');section.insertAdjacentHTML('beforeend',cardMarkup('BV1oC411572T','動態載入',''));
+ await settle();check(all().length===4,'動態載入卡片自動補上按鈕');
+ section.lastElementChild.remove();await settle();check(all().length===3,'移除卡片不留下按鈕');
+ const dock=document.querySelector('.ba-vr-dock'),trigger=dock.querySelector('.ba-vr-dock-trigger'),dockActions=dock.querySelector('.ba-vr-dock-actions');
+ check(document.querySelectorAll('.ba-vr-dock').length===1&&dockActions.hidden&&trigger.getAttribute('aria-expanded')==='false','影片頁預設僅一個收合入口');
+ const b=trigger.getBoundingClientRect();check(b.width>=44&&b.height>=44&&getComputedStyle(trigger).opacity==='0.55','收合入口半透明且保留 44px 點擊範圍');
+ check([...document.querySelectorAll('.fixed-analysis-btn')].filter(button=>!dock.contains(button)).every(button=>getComputedStyle(button).display==='none'),'隱藏兩角重複的原按鈕');
+ trigger.click();check(!dockActions.hidden&&trigger.getAttribute('aria-expanded')==='true','點擊或鍵盤操作可展開解析選項');
+ openSettings();
+ document.querySelectorAll('#biliAnalysisSettingsPanel .mode-card input').forEach(input=>input.checked=['cloud-ya','local'].includes(input.value));
+ document.getElementById('settingsSaveBtn').click();await settle();
+ trigger.click();
+ check(dockActions.children.length===2&&dockActions.firstElementChild.dataset.mode==='cloud-ya'&&dockActions.lastElementChild.getBoundingClientRect().width===44,'原版設定更新後收合選單保留 ya 主按鈕與本地小按鈕');
+ dockActions.firstElementChild.click();check(copies.at(-1)==='https://bil.ouo.chat/player/?url='+location.href,'影片頁主按鈕仍由上游複製目前頁面的 ya 連結');
+ window.dispatchEvent(new Event('resize'));await new Promise(resolve=>setTimeout(resolve,700));
+ check(document.querySelectorAll('.ba-vr-dock').length===1&&dockActions.children.length===2,'縮放後重新產生按鈕不重複入口或解析選項');
+ dock.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ check(dockActions.hidden&&document.activeElement===trigger,'Escape 收起選單並返回入口');
+ trigger.blur();dock.dispatchEvent(new PointerEvent('pointerenter'));
+ dock.dispatchEvent(new PointerEvent('pointerleave'));await new Promise(resolve=>setTimeout(resolve,250));
+ check(!dockActions.hidden,'離開入口後保留約半秒操作緩衝');
+ dock.dispatchEvent(new PointerEvent('pointerenter'));await new Promise(resolve=>setTimeout(resolve,350));
+ check(!dockActions.hidden,'移回入口會取消收起倒數');
+ dock.dispatchEvent(new PointerEvent('pointerleave'));await new Promise(resolve=>setTimeout(resolve,550));
+ check(dockActions.hidden,'滑鼠離開約半秒後自動收起');
+ const c=all()[0].getBoundingClientRect();check(c.height>=44,'卡片點擊範圍至少 44px');
+ const d=all()[0].getBoundingClientRect(), l=root.querySelector('.later').getBoundingClientRect();
+ check(d.right<=l.left||d.bottom<=l.top||d.top>=l.bottom,'卡片快捷鍵不遮住稍後再看');
+ const edge=dock.getBoundingClientRect();
+ check(edge.left>=0&&edge.right<=innerWidth&&edge.top>=0&&edge.bottom<=innerHeight,'右側收合入口完整留在畫面內');
+ // Let pending mutation callbacks settle: an observer loop must not keep rewriting the same button.
+ let changes=0;const observer=new MutationObserver(m=>changes+=m.length);observer.observe(document.body,{subtree:true,attributes:true,childList:true});
+ await new Promise(resolve=>setTimeout(resolve,600));observer.disconnect();
+ check(changes<10,'沒有持續改寫樣式的 observer 迴圈');
+ document.getElementById('result').textContent=`${results.length} 項驗證通過\n`+results.join('\n');
+ document.documentElement.dataset.testResult='PASS';
+ return results;
+};
+if(new URLSearchParams(location.search).has('test')) runChecks().catch(error=>{
+ document.documentElement.dataset.testResult='FAIL';document.getElementById('result').textContent=error.stack;
+});
+else document.getElementById('result').textContent='介面預覽 · 此頁的剪貼簿和本地 API 已以測試資料替代。';
+</script></html>
