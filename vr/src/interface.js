@@ -20,17 +20,17 @@ function installVRInterface({ parse, getModes, getPosition }) {
         .ba-vr-video .fixed-analysis-btn { display:none !important; }
         .ba-vr-dock { position:fixed; right:8px; top:50%; transform:translateY(-50%);
             display:flex; align-items:center; gap:8px; padding:8px; z-index:999; }
-        .ba-vr-dock-trigger.ba-vr-action { width:44px; height:44px; padding:0; opacity:.55 !important; }
-        .ba-vr-dock:hover .ba-vr-dock-trigger,
-        .ba-vr-dock:focus-within .ba-vr-dock-trigger { opacity:1 !important; }
-        .ba-vr-dock-actions { display:flex; align-items:center; gap:6px; }
-        .ba-vr-dock-actions[hidden] { display:none; }
+        .ba-vr-dock-actions { display:flex; flex-direction:row-reverse; align-items:center; gap:6px; }
         .ba-vr-dock .fixed-analysis-btn.ba-vr-action { display:inline-flex !important;
             position:static !important; inset:auto !important; width:auto !important; min-width:140px !important;
             height:48px !important; padding:10px 16px !important; font-size:15px !important; }
         .ba-vr-dock-actions[data-many] .fixed-analysis-btn[data-mode="local"] {
             min-width:44px !important; width:44px !important; height:44px !important; padding:0 !important; }
         .ba-vr-dock-actions[data-many] [data-mode="local"] span { display:none; }
+        .ba-vr-dock[data-open="false"] .fixed-analysis-btn:not(.ba-vr-dock-primary) { display:none !important; }
+        .ba-vr-dock[data-open="false"] .ba-vr-dock-primary {
+            min-width:44px !important; width:44px !important; height:44px !important; padding:0 !important; opacity:.55 !important; }
+        .ba-vr-dock[data-open="false"] .ba-vr-dock-primary span { display:none; }
         .ba-vr-card-actions { position:absolute; left:8px; bottom:32px; z-index:5;
             display:flex; flex-direction:column; gap:6px; max-width:calc(100% - 16px);
             opacity:0; pointer-events:none; }
@@ -52,7 +52,7 @@ function installVRInterface({ parse, getModes, getPosition }) {
     document.head.append(style);
     const normalizedStyle = document.createElement('div').style;
     const isVideo = location.pathname.startsWith('/video/') || new URL(location.href).searchParams.has('bvid');
-    let dock, dockActions, dockTrigger, closeTimer;
+    let dock, dockActions, dockPrimary, closeTimer;
 
     function decorateVideoDock() {
         document.body.classList.add('ba-vr-video');
@@ -60,7 +60,8 @@ function installVRInterface({ parse, getModes, getPosition }) {
         document.querySelectorAll('.fixed-analysis-btn').forEach(button => {
             if (!byMode.has(button.dataset.mode) || button.parentElement === dockActions) byMode.set(button.dataset.mode, button);
         });
-        const buttons = [...byMode.values()].sort((a, b) => Number(a.dataset.mode === 'local') - Number(b.dataset.mode === 'local'));
+        const priority = { 'cloud-ya':0, local:2 };
+        const buttons = [...byMode.values()].sort((a, b) => (priority[a.dataset.mode] ?? 1) - (priority[b.dataset.mode] ?? 1));
         if (!buttons.length) {
             clearTimeout(closeTimer);
             dock?.remove();
@@ -70,28 +71,20 @@ function installVRInterface({ parse, getModes, getPosition }) {
         if (!dock) {
             dock = document.createElement('div');
             dock.className = 'ba-vr-dock';
+            dock.dataset.open = 'false';
             dockActions = document.createElement('div');
             dockActions.id = 'ba-vr-dock-actions';
             dockActions.className = 'ba-vr-dock-actions';
             dockActions.setAttribute('role', 'group');
             dockActions.setAttribute('aria-label', '解析連結');
-            dockActions.hidden = true;
-            dockTrigger = document.createElement('button');
-            dockTrigger.type = 'button';
-            dockTrigger.className = 'ba-vr-action ba-vr-dock-trigger';
-            dockTrigger.innerHTML = icon;
-            dockTrigger.title = '展開解析連結';
-            dockTrigger.setAttribute('aria-label', dockTrigger.title);
-            dockTrigger.setAttribute('aria-controls', dockActions.id);
-            dockTrigger.setAttribute('aria-expanded', 'false');
             const show = () => {
                 clearTimeout(closeTimer);
-                dockActions.hidden = false;
-                dockTrigger.setAttribute('aria-expanded', 'true');
+                dock.dataset.open = 'true';
+                dockPrimary.setAttribute('aria-expanded', 'true');
             };
             const hide = () => {
-                dockActions.hidden = true;
-                dockTrigger.setAttribute('aria-expanded', 'false');
+                dock.dataset.open = 'false';
+                dockPrimary.setAttribute('aria-expanded', 'false');
             };
             const closeLater = () => {
                 clearTimeout(closeTimer);
@@ -103,16 +96,15 @@ function installVRInterface({ parse, getModes, getPosition }) {
             dock.addEventListener('pointerleave', closeLater);
             dock.addEventListener('focusin', show);
             dock.addEventListener('focusout', closeLater);
-            dockTrigger.addEventListener('click', () => { show(); dockActions.querySelector('button')?.focus(); });
             dock.addEventListener('keydown', event => {
                 if (event.key === 'Escape') {
                     event.preventDefault();
                     event.stopPropagation();
-                    dockTrigger.focus();
+                    dockPrimary.focus();
                     hide();
                 }
             });
-            dock.append(dockActions, dockTrigger);
+            dock.append(dockActions);
             document.body.append(dock);
         }
         buttons.forEach(button => {
@@ -123,6 +115,12 @@ function installVRInterface({ parse, getModes, getPosition }) {
             button.querySelector('small').textContent = label;
             button.title = `解析連結 · ${label}`;
             button.setAttribute('aria-label', button.title);
+        });
+        dockPrimary = buttons[0];
+        buttons.forEach(button => {
+            button.classList.toggle('ba-vr-dock-primary', button === dockPrimary);
+            if (button === dockPrimary) button.setAttribute('aria-expanded', dock.dataset.open);
+            else button.removeAttribute('aria-expanded');
         });
         dockActions.toggleAttribute('data-many', buttons.length > 1);
         if (buttons.length !== dockActions.children.length || buttons.some((button, index) => dockActions.children[index] !== button)) {

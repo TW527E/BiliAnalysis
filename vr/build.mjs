@@ -19,7 +19,7 @@ export function integrate(source, ui) {
     let output = source
         .replace(/^\/\/ @name\s+.*$/m, '// @name         BiliAnalysis VR')
         .replace(/^\/\/ @namespace\s+.*$/m, '// @namespace    bilianalysis-vr-local')
-        .replace(/^\/\/ @version\s+.*$/m, `// @version      ${upstreamVersion}.4`)
+        .replace(/^\/\/ @version\s+.*$/m, `// @version      ${upstreamVersion}.5`)
         .replace(/^\/\/ @description\s+.*$/m, '// @description  BiliAnalysis 原版解析，搭配大按鈕與 BewlyCat 卡片快捷鍵。')
         .replace(/^\/\/ @(downloadURL|updateURL)\s+.*$/gm, `// @$1    ${downloadUrl}`);
     output = output.replace(footer, `\n    init();\n    (${ui.trim()})({\n        parse: handleParseAndCopy,\n        getModes: () => getActiveParseModesForTarget('video'),\n        getPosition: getButtonPositionSettings\n    });\n})();\n`);
