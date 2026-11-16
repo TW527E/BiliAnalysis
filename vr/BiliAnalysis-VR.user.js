@@ -46,7 +46,7 @@
     // --- 常量配置 ---
     const SCRIPT_NAME = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.name) ? GM_info.script.name : "BiliBili云端解析";
     const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) ? GM_info.script.version : "1.0.0";
-    const RELEASE_API_URL = "https://api.github.com/repos/mmyo456/BiliAnalysis/releases/latest";
+    const RELEASE_API_URL = "https://api.github.com/repos/TW527E/BiliAnalysis/contents/vr/BiliAnalysis-VR.user.js?ref=main";
     const API_DOMAIN = "https://jx.ouo.chat/bl/";
     const API_DOMAIN_YA = "https://bil.ouo.chat/player/";
     const MAX_PARSE_MODES = 2;
@@ -1507,7 +1507,7 @@
                 let latest = '';
                 try {
                     const data = JSON.parse(response.responseText || '{}');
-                    latest = (data.tag_name || data.name || '').trim();
+                    latest = ((atob((data.content || '').replace(/\s/g, '')).match(/^\/\/ @version\s+(\S+)/m) || [])[1] || '').trim();
                 } catch (e) {
                     console.error('解析版本信息失败:', e);
                 }
@@ -2917,6 +2917,17 @@ function installVRInterface({ parse, getModes, getPosition }) {
         }
     }
 
+    /** While the settings panel is open, the sliders are the preview; the saved values are only read once it closes. */
+    function currentPosition() {
+        const saved = getPosition();
+        if (!document.getElementById('biliAnalysisSettingsPanel')?.classList.contains('show')) return saved;
+        const live = axis => {
+            const value = parseInt(document.getElementById(`slider${axis}Value`)?.value, 10);
+            return Number.isNaN(value) ? null : Math.max(0, Math.min(100, value));
+        };
+        return { ...saved, customX: live('X') ?? saved.customX, customY: live('Y') ?? saved.customY };
+    }
+
     function decorateFixed() {
         if (isVideo) return decorateVideoDock();
         document.querySelectorAll('.fixed-analysis-btn').forEach(button => {
@@ -2936,7 +2947,7 @@ function installVRInterface({ parse, getModes, getPosition }) {
                 if (button.style[key] !== normalizedStyle[key]) button.style[key] = normalizedStyle[key];
             };
             if (position === 'custom') {
-                const { customX, customY } = getPosition();
+                const { customX, customY } = currentPosition();
                 set('left', `calc(${customX} / 100 * (100vw - 156px))`);
                 set('top', `min(calc(${customY} / 100 * (100vh - ${64 + offset}px) + ${offset}px), calc(100vh - 64px))`);
             } else if (/^(top|bottom)-(left|right)$/.test(position)) {

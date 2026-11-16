@@ -9,11 +9,16 @@ import { promisify } from 'node:util';
 const root = dirname(fileURLToPath(import.meta.url));
 const footer = /\n    init\(\);\s*\n\}\)\(\);\s*$/;
 const downloadUrl = 'https://raw.githubusercontent.com/TW527E/BiliAnalysis/main/vr/BiliAnalysis-VR.user.js';
+// The panel's update check must ask the fork, not upstream: the fork's version has an extra segment
+// and the fork publishes no releases, so read @version from the published script (same host as before).
+const versionApiUrl = 'https://api.github.com/repos/TW527E/BiliAnalysis/contents/vr/BiliAnalysis-VR.user.js?ref=main';
+const releaseUrl = /^(\s*const RELEASE_API_URL = )"https:\/\/api\.github\.com\/repos\/mmyo456\/BiliAnalysis\/releases\/latest";/m;
+const releaseParse = "latest = (data.tag_name || data.name || '').trim();";
 export function integrate(source, ui) {
     for (const name of ['handleParseAndCopy', 'getActiveParseModesForTarget', 'getButtonPositionSettings']) {
         if (!new RegExp(`function ${name}\\(`).test(source)) throw new Error(`上游接點改變：${name}。保留舊版，請先調整接點。`);
     }
-    if (!footer.test(source) || !source.startsWith('// ==UserScript==')) throw new Error('上游結構改變，無法安全整合。');
+    if (!footer.test(source) || !source.startsWith('// ==UserScript==') || !releaseUrl.test(source) || !source.includes(releaseParse)) throw new Error('上游結構改變，無法安全整合。');
     const upstreamVersion = source.match(/^\/\/ @version\s+(\S+)/m)?.[1];
     if (!upstreamVersion) throw new Error('缺少上游版本。');
     let output = source
@@ -21,7 +26,9 @@ export function integrate(source, ui) {
         .replace(/^\/\/ @namespace\s+.*$/m, '// @namespace    bilianalysis-vr-local')
         .replace(/^\/\/ @version\s+.*$/m, `// @version      ${upstreamVersion}.5`)
         .replace(/^\/\/ @description\s+.*$/m, '// @description  BiliAnalysis 原版解析，搭配大按鈕與 BewlyCat 卡片快捷鍵。')
-        .replace(/^\/\/ @(downloadURL|updateURL)\s+.*$/gm, `// @$1    ${downloadUrl}`);
+        .replace(/^\/\/ @(downloadURL|updateURL)\s+.*$/gm, `// @$1    ${downloadUrl}`)
+        .replace(releaseUrl, `$1"${versionApiUrl}";`)
+        .replace(releaseParse, "latest = ((atob((data.content || '').replace(/\\s/g, '')).match(/^\\/\\/ @version\\s+(\\S+)/m) || [])[1] || '').trim();");
     output = output.replace(footer, `\n    init();\n    (${ui.trim()})({\n        parse: handleParseAndCopy,\n        getModes: () => getActiveParseModesForTarget('video'),\n        getPosition: getButtonPositionSettings\n    });\n})();\n`);
     new Script(output, { filename: 'BiliAnalysis-VR.user.js' });
     return output;
