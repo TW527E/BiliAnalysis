@@ -128,6 +128,17 @@ function installVRInterface({ parse, getModes, getPosition }) {
         }
     }
 
+    /** While the settings panel is open, the sliders are the preview; the saved values are only read once it closes. */
+    function currentPosition() {
+        const saved = getPosition();
+        if (!document.getElementById('biliAnalysisSettingsPanel')?.classList.contains('show')) return saved;
+        const live = axis => {
+            const value = parseInt(document.getElementById(`slider${axis}Value`)?.value, 10);
+            return Number.isNaN(value) ? null : Math.max(0, Math.min(100, value));
+        };
+        return { ...saved, customX: live('X') ?? saved.customX, customY: live('Y') ?? saved.customY };
+    }
+
     function decorateFixed() {
         if (isVideo) return decorateVideoDock();
         document.querySelectorAll('.fixed-analysis-btn').forEach(button => {
@@ -147,7 +158,7 @@ function installVRInterface({ parse, getModes, getPosition }) {
                 if (button.style[key] !== normalizedStyle[key]) button.style[key] = normalizedStyle[key];
             };
             if (position === 'custom') {
-                const { customX, customY } = getPosition();
+                const { customX, customY } = currentPosition();
                 set('left', `calc(${customX} / 100 * (100vw - 156px))`);
                 set('top', `min(calc(${customY} / 100 * (100vh - ${64 + offset}px) + ${offset}px), calc(100vh - 64px))`);
             } else if (/^(top|bottom)-(left|right)$/.test(position)) {
